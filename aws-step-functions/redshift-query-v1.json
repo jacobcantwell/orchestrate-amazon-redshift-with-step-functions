@@ -1,0 +1,89 @@
+{
+    "StartAt": "ListObjects",
+    "States": {
+      "ListObjects": {
+        "Type": "Task",
+        "Next": "Map SQL files in Amazon S3",
+        "Parameters": {
+          "Bucket": "redshift-sql-queries-190067120391",
+          "Prefix": "development/sql-"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:s3:listObjects"
+      },
+      "Map SQL files in Amazon S3": {
+        "Type": "Map",
+        "Iterator": {
+          "StartAt": "Call Amazon Redshift Data API execute_statement",
+          "States": {
+            "Call Amazon Redshift Data API execute_statement": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "arn:aws:lambda:ap-southeast-2:190067120391:function:load-redshift-sql-from-s3-v1:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Wait"
+            },
+            "Wait": {
+              "Type": "Wait",
+              "Seconds": 5,
+              "Comment": "Wait 5 seconds for the Redshift query",
+              "Next": "Call Amazon Redshift Data API describe_statement"
+            },
+            "Call Amazon Redshift Data API describe_statement": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:ap-southeast-2:190067120391:function:load-redshift-sql-from-s3-v1",
+                "Payload.$": "$"
+              },
+              "OutputPath": "$.Payload",
+              "Next": "Has this query finished?"
+            },
+            "Has this query finished?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.query_status",
+                  "StringMatches": "FINISHED",
+                  "Next": "Success"
+                },
+                {
+                  "Variable": "$.query_status",
+                  "StringMatches": "FAILED",
+                  "Next": "Fail"
+                }
+              ],
+              "Default": "Fail"
+            },
+            "Success": {
+              "Type": "Succeed"
+            },
+            "Fail": {
+              "Type": "Fail"
+            }
+          }
+        },
+        "End": true,
+        "ItemsPath": "$.Contents",
+        "Parameters": {
+          "s3_object_key.$": "$$.Map.Item.Value.Key",
+          "s3_bucket_name.$": "$.Name"
+        }
+      }
+    },
+    "Comment": "Extract the SQL query from an object in Amazon S3 and use it to call the Amazon Redshift Data API execute_statement"
+  }
