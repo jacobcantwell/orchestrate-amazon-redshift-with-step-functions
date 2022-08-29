@@ -6,6 +6,7 @@ s3_client = boto3.client('s3')
 
 REGION = "ap-southeast-2"
 REDSHIFT_DATABASE_NAME = "sample_data_dev"
+SECRET_NAME = "redshift-cluster-v1"
 
 # Use this code snippet in your app.
 # If you need more information about configurations or implementing the sample code, visit the AWS docs:   
@@ -15,10 +16,9 @@ import boto3
 import base64
 from botocore.exceptions import ClientError
 
-
 # define RedShift secrets
 def get_secret():
-    secret_name = "redshift-cluster-v1"
+    secret_name = SECRET_NAME
     region_name = REGION
     # Create a Secrets Manager client
     session = boto3.session.Session()
@@ -59,9 +59,7 @@ def get_secret():
         if "SecretString" in get_secret_value_response:
             secret = get_secret_value_response["SecretString"]
             secret_json = json.loads(secret)
-            print("########## secrets secret_json", secret_json)
             cluster_id=secret_json["dbClusterIdentifier"]
-            print("secrets cluster_id", cluster_id)
             return secret_arn, cluster_id
 
 secret_arn, cluster_id = get_secret()
