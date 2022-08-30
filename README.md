@@ -53,6 +53,9 @@ Code is based on boto3 execute statement - https://boto3.amazonaws.com/v1/docume
 
 Copy the lambda_function.py content in the aws-lambda/load-redshift-sql-from-s3-v1 folder.
 
+* Update the Secrets Manager secret name
+* Update the Amazon Redshift database name
+
 ### Test
 
 Create two test objects and test.
