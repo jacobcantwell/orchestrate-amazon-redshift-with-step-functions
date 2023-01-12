@@ -1,4 +1,4 @@
-# Orchestrate Amazon RedShift Queries with AWS Step Functions
+# Orchestrate Amazon Redshift Queries with AWS Step Functions
 
 These instructions will show you how to orchestrate SQL calls to an Amazon Redshift database. The trigger in this example is time based and runs nightly, initiating a sequence of SQL quieres that are stored in an Amazon S3 bucket. 
 
